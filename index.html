@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+</head>
+<body>
+    <!-- Login Form -->
+    <div id="loginForm">
+        <h1>Login</h1>
+        
+        <p><strong>Test Credentials:</strong><br>
+        Email: test@example.com<br>
+        Password: password123</p>
+        
+        <div id="errorMessage" style="color: red; display: none;"></div>
+        
+        <form id="loginFormElement">
+            <div>
+                <label for="email">Email:</label><br>
+                <input type="email" id="email" required>
+            </div>
+            <br>
+            
+            <div>
+                <label for="password">Password:</label><br>
+                <input type="password" id="password" required>
+            </div>
+            <br>
+            
+            <button type="submit" id="loginBtn">Login</button>
+        </form>
+    </div>
+    
+    <!-- Dashboard -->
+    <div id="dashboard" style="display: none;">
+        <h1>Dashboard</h1>
+        <p>Welcome! You have successfully logged in.</p>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <script>
+        console.log("Script loaded"); // Debug log
+        
+        // Hardcoded credentials
+        const VALID_EMAIL = 'user@example.com';
+        const VALID_PASSWORD = 'password123';
+        const MIN_PASSWORD_LENGTH = 8;
+        const MAX_FAILED_ATTEMPTS = 3;
+        const LOCKOUT_DURATION = 5 * 60 * 1000; // 5 minutes
+        
+        // System state
+        let failedAttempts = 0;
+        let isLocked = false;
+        let lockoutTime = null;
+        
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM loaded"); // Debug log
+            
+            const form = document.getElementById('loginFormElement');
+            
+            if (!form) {
+                console.error("Form not found!");
+                return;
+            }
+            
+            form.addEventListener('submit', function(e) {
+                console.log("Form submitted"); // Debug log
+                e.preventDefault();
+                
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
+                
+                console.log("Email:", email, "Password length:", password.length); // Debug log
+                
+                // Check if account is locked
+                if (isLocked) {
+                    const timeRemaining = getRemainingLockoutTime();
+                    if (timeRemaining > 0) {
+                        showError(`Account is locked. Try again in ${Math.ceil(timeRemaining / 60000)} minutes.`);
+                        return;
+                    } else {
+                        // Unlock account
+                        isLocked = false;
+                        failedAttempts = 0;
+                        lockoutTime = null;
+                    }
+                }
+                
+                // Validate password length
+                if (password.length < MIN_PASSWORD_LENGTH) {
+                    handleFailedAttempt('Password must be at least 8 characters.');
+                    return;
+                }
+                
+                // Check credentials
+                if (email === VALID_EMAIL && password === VALID_PASSWORD) {
+                    console.log("Login successful!"); // Debug log
+                    // Successful login
+                    failedAttempts = 0;
+                    hideError();
+                    redirectToDashboard();
+                } else {
+                    console.log("Login failed"); // Debug log
+                    // Failed login
+                    handleFailedAttempt('Invalid email or password.');
+                }
+            });
+        });
+        
+        function handleFailedAttempt(message) {
+            failedAttempts++;
+            console.log("Failed attempts:", failedAttempts); // Debug log
+            
+            if (failedAttempts >= MAX_FAILED_ATTEMPTS) {
+                // Lock account
+                isLocked = true;
+                lockoutTime = Date.now();
+                showError('Account locked for 5 minutes after 3 failed attempts.');
+            } else {
+                const attemptsRemaining = MAX_FAILED_ATTEMPTS - failedAttempts;
+                showError(`${message} ${attemptsRemaining} attempts remaining.`);
+            }
+        }
+        
+        function getRemainingLockoutTime() {
+            if (!lockoutTime) return 0;
+            const elapsed = Date.now() - lockoutTime;
+            return Math.max(0, LOCKOUT_DURATION - elapsed);
+        }
+        
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            if (errorMessage) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+            }
+        }
+        
+        function hideError() {
+            const errorMessage = document.getElementById('errorMessage');
+            if (errorMessage) {
+                errorMessage.style.display = 'none';
+            }
+        }
+        
+        function redirectToDashboard() {
+            console.log("Redirecting to dashboard"); // Debug log
+            const loginForm = document.getElementById('loginForm');
+            const dashboard = document.getElementById('dashboard');
+            if (loginForm && dashboard) {
+                loginForm.style.display = 'none';
+                dashboard.style.display = 'block';
+            }
+        }
+        
+        function logout() {
+            console.log("Logging out"); // Debug log
+            const dashboard = document.getElementById('dashboard');
+            const loginForm = document.getElementById('loginForm');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            
+            if (dashboard && loginForm) {
+                dashboard.style.display = 'none';
+                loginForm.style.display = 'block';
+            }
+            if (emailInput) emailInput.value = '';
+            if (passwordInput) passwordInput.value = '';
+            hideError();
+        }
+    </script>
+</body>
+</html>
